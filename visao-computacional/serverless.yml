@@ -1,0 +1,166 @@
+service: NatalinoBot-projeto-final
+frameworkVersion: '3'
+
+# Plugins para requisitos do Python
+plugins:
+  - serverless-python-requirements
+  - serverless-dotenv-plugin
+
+useDotenv: true
+
+# Configurações personalizadas
+custom:
+  pythonRequirements:
+    dockerizePip: true  # Usa Docker para isolar a instalação do Pip
+    useDownloadCache: false
+
+# Configuração do provedor AWS
+provider:
+  name: aws
+  runtime: python3.10
+  region: us-east-1
+  environment:
+    BUCKET_NAME: ${env:BUCKET_NAME}
+    DYNAMODB_TABLE_NAME: ${env:DYNAMODB_TABLE_NAME}
+    TELEGRAM_TOKEN: ${env:TELEGRAM_TOKEN}
+    LEX_BOT_ID: ${env:LEX_BOT_ID}
+    LEX_BOT_ALIAS_ID: ${env:LEX_BOT_ALIAS_ID}
+  iam:
+    role: 
+      statements:
+        - Effect: Allow
+          Action:
+            - lex:PostText
+          Resource: arn:aws:lexv2:us-east-1:851725456827:bot-alias/${env:LEX_BOT_ID}/${env:LEX_BOT_ALIAS_ID}
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:CreateBucket
+            - s3:HeadBucket
+          Resource: arn:aws:s3:::${env:BUCKET_NAME}/*  # Permissões para o bucket S3
+        - Effect: Allow
+          Action:
+            - polly:SynthesizeSpeech
+          Resource: "*"  # Permissão para o serviço Polly
+        - Effect: Allow
+          Action:
+            - bedrock:InvokeModel
+          Resource: "*"
+        - Effect: Allow
+          Action:
+            - dynamodb:DescribeTable
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:ListTables
+          Resource: "*"  # Permissões para o DynamoDB
+        - Effect: Allow
+          Action:
+            - rekognition:DetectLabels
+            - rekognition:DetectText
+            - rekognition:DetectImageProperties
+          Resource: "*"  # Permissões para o serviço Rekognition
+        - Effect: Allow
+          Action:
+            - transcribe:StartTranscriptionJob
+            - transcribe:GetTranscriptionJob
+            - transcribe:ListTranscriptionJobs
+            - transcribe:DeleteTranscriptionJob
+          Resource: "*"  # Permissões para o serviço Transcribe
+        - Effect: Allow
+          Action:
+            - logs:DescribeLogStreams
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            - logs:CreateLogGroup
+          Resource: arn:aws:logs:us-east-1:767398055833:log-group:rekognition-logs:log-stream:*
+        - Effect: Allow
+          Action:
+            - lambda:ListFunctions
+            - lambda:UpdateFunctionConfiguration
+          Resource: "*"  # Permissões para Lambda
+
+# Funções Lambda
+functions:
+  health:
+    handler: handler.healthMyApp
+    events:
+      - http:
+          path: /
+          method: get  # Endpoint para verificar a saúde da aplicação
+
+  convert_stt:
+    handler: handler.convertSpeechToText
+    events:
+      - http:
+          path: /v1/convertSpeechToText
+          method: post  # Endpoint para testes
+
+  message_bedrock:
+    handler: handler.messageBedrock
+    events:
+      - http:
+          path: /v1/messageBedrock
+          method: post  # Endpoint para testes
+
+  lambda_backend:
+    handler: handler.lambdaBackend
+    events:
+      - http:
+          path: /v1/lambdaBackend
+          method: post  # Endpoint para testes
+
+  upload_s3_bucket:
+    handler: handler.uploadS3Bucket
+    events:
+      - http:
+          path: /v1/uploadS3Bucket
+          method: post  # Endpoint para testes
+  
+  load_rekogntion:
+    handler: handler.loadRekogntion
+    events:
+      - http:
+          path: /v1/loadRekogntion
+          method: post  # Endpoint para testes
+
+  generate_log:
+    handler: handler.generateLogDynamo
+    events:
+      - http:
+          path: /v1/generateLogDynamo
+          method: post  # Endpoint para testes
+  webhook:
+    handler: handler.webhook
+    url: true      
+          
+# Recursos AWS adicionais
+resources:
+  Resources:
+    S3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${env:BUCKET_NAME}  # Definição do bucket S3
+
+    DynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${env:DYNAMODB_TABLE_NAME}  # Definição da tabela DynamoDB
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S  # Tipo de atributo String
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH  # Chave primária
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5  # Capacidade de leitura
+          WriteCapacityUnits: 5  # Capacidade de escrita
+
+package:
+  exclude:
+    - node_modules/**
+    - venv/**
