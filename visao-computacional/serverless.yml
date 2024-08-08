@@ -25,13 +25,14 @@ provider:
     TELEGRAM_TOKEN: ${env:TELEGRAM_TOKEN}
     LEX_BOT_ID: ${env:LEX_BOT_ID}
     LEX_BOT_ALIAS_ID: ${env:LEX_BOT_ALIAS_ID}
+    AWS_USER_CODE: ${env:AWS_USER_CODE}
   iam:
     role: 
       statements:
         - Effect: Allow
           Action:
             - lex:PostText
-          Resource: arn:aws:lexv2:us-east-1:851725456827:bot-alias/${env:LEX_BOT_ID}/${env:LEX_BOT_ALIAS_ID}
+          Resource: arn:aws:lexv2:us-east-1:${env:AWS_USER_CODE}:bot-alias/${env:LEX_BOT_ID}/${env:LEX_BOT_ALIAS_ID}
         - Effect: Allow
           Action:
             - s3:PutObject
@@ -77,7 +78,7 @@ provider:
             - logs:CreateLogStream
             - logs:PutLogEvents
             - logs:CreateLogGroup
-          Resource: arn:aws:logs:us-east-1:767398055833:log-group:rekognition-logs:log-stream:*
+          Resource: arn:aws:logs:us-east-1:${env:AWS_USER_CODE}:log-group:rekognition-logs:log-stream:*
         - Effect: Allow
           Action:
             - lambda:ListFunctions
