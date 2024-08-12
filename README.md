@@ -85,7 +85,7 @@ O chatbot conta com recursos do ***Amazon Bedrock*** e ***AWS Transcribe*** para
 
 #### Amazon Bedrock
 
-O ***Amazon Bedrock*** é o respondável por criar mensagens amigáveis para o **Fallback**.
+O ***Amazon Bedrock*** é o respondável por criar mensagens amigáveis e humanizadas para o **Fallback**, assim como interpretar o texto transcrito de áudios recebidos, identificando a intenção do usuário.
 
 <!-- Exemplo Terminar-->
 
